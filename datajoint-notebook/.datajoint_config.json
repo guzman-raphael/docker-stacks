@@ -1,0 +1,15 @@
+{
+    "database.host": "workshop-db.datajoint.io",
+    "database.user": "sfn19_user",
+    "database.password": "city-of-wind-91",
+    "database.port": 3306,
+    "connection.init_function": null,
+    "database.reconnect": false,
+    "loglevel": "INFO",
+    "safemode": true,
+    "display.limit": 7,
+    "display.width": 14,
+    "display.show_tuple_count": true,
+    "do_unittest": true,
+    "custom": {"database.prefix":  "djneuro_sfn19_"}
+ }
