@@ -10,13 +10,13 @@
 # ARG BASE_CONTAINER=debian:9.9-slim
 ARG BASE_CONTAINER=alpine:3.10
 
-#Temp Image to create exec to allow UID/GID to be updated on boot
-FROM golang:alpine3.9 as go_tmp
-COPY ./startup.go /startup.go
-RUN cd / && go build startup.go
+# #Temp Image to create exec to allow UID/GID to be updated on boot
+# FROM golang:alpine3.9 as go_tmp
+# COPY ./startup.go /startup.go
+# RUN cd / && go build startup.go
 
 FROM $BASE_CONTAINER as base
-COPY --from=go_tmp /startup /startup
+# COPY --from=go_tmp /startup /startup
 LABEL maintainer="Jupyter Project <jupyter@googlegroups.com>"
 ARG NB_USER="jovyan"
 ARG NB_UID="1000"
@@ -100,7 +100,7 @@ RUN echo "auth requisite pam_deny.so" >> /etc/pam.d/su && \
     chmod g+w /etc/passwd && \
     # fix-permissions $HOME && \
     fix-permissions "$(dirname $CONDA_DIR)" && \
-    chmod 4755 /startup && \
+    # chmod 4755 /startup && \
     apk add bash
 # RUN ls -la $(dirname $CONDA_DIR)
 USER $NB_UID
@@ -277,3 +277,4 @@ ENTRYPOINT ["tini", "-g", "--"]
 CMD ["start-notebook.sh"]
 # RUN fix-permissions /etc/jupyter/
 USER $NB_UID
+# USER root

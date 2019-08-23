@@ -40,7 +40,7 @@ run-hooks /usr/local/bin/start-notebook.d
 
 # Handle special flags if we're root
 if [ $(id -u) == 0 ] ; then
-
+    # export NB_USER=${JUPYTERHUB_USER}
     # Only attempt to change the jovyan username if it exists
     if id jovyan &> /dev/null ; then
         echo "Set username to: $NB_USER"
@@ -67,6 +67,7 @@ if [ $(id -u) == 0 ] ; then
         if [[ ! -e "/home/$NB_USER" ]]; then
             echo "Relocating home dir to /home/$NB_USER"
             mv /home/jovyan "/home/$NB_USER"
+            chown ${NB_UID}:${NB_GID} /home/${NB_USER}
         fi
         # if workdir is in /home/jovyan, cd to /home/$NB_USER
         if [[ "$PWD/" == "/home/jovyan/"* ]]; then
@@ -102,6 +103,11 @@ if [ $(id -u) == 0 ] ; then
     # Exec the command as NB_USER with the PATH and the rest of
     # the environment preserved
     run-hooks /usr/local/bin/before-notebook.d
+
+    # Post-start script
+    # exec sudo -E -H -u $NB_USER /usr/local/bin/post-start.sh
+    echo "Waiting for ${TEMP_WAIT}[s]"
+    sleep $TEMP_WAIT
     echo "Executing the command: ${cmd[@]}"
     exec sudo -E -H -u $NB_USER PATH=$PATH XDG_CACHE_HOME=/home/$NB_USER/.cache PYTHONPATH=${PYTHONPATH:-} "${cmd[@]}"
 else
