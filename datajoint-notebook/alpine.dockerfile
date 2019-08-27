@@ -1,5 +1,5 @@
 # docker build . -t raphaelguzman/datajoint-jnb:v3.0
-# docker build -f alpine.dockerfile -t raphaelguzman/datajoint-jnb:v7.0 .
+# docker build -f alpine.dockerfile -t raphaelguzman/datajoint-jnb:v0.2.6 .
 # curl https://cloud.docker.com/v2/repositories/raphaelguzman/datajoint-jnb/tags/?page_size=25 | jq '[.results[] | { tag: .name, size: .images[0].size }]|.[].size/=1024*1024'
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
@@ -19,6 +19,7 @@ FROM $BASE_CONTAINER as base
 # COPY --from=go_tmp /startup /startup
 LABEL maintainer="Jupyter Project <jupyter@googlegroups.com>"
 ARG NB_USER="jovyan"
+ARG NB_USER_HOME=".jovyan"
 ARG NB_UID="1000"
 ARG NB_GID="100"
 
@@ -74,7 +75,7 @@ ENV CONDA_DIR=/opt/conda \
     LANG=en_US.UTF-8 \
     LANGUAGE=en_US.UTF-8
 ENV PATH=$CONDA_DIR/bin:$PATH \
-    HOME=/home/$NB_USER
+    HOME=/home/$NB_USER_HOME
 
 # Add a script that we will use to correct permissions after running certain commands
 ADD fix-permissions-alpine /usr/local/bin/fix-permissions
@@ -92,9 +93,9 @@ RUN echo "auth requisite pam_deny.so" >> /etc/pam.d/su && \
     sed -i.bak -e 's/^%sudo/#%sudo/' /etc/sudoers && \
    #  addgroup --gid $NB_GID $NB_USER && \
    #  adduser -h /home/$NB_USER -s /bin/sh -u $NB_UID $NB_USER && \
-    mkdir -p /home/$NB_USER && \
-    echo "${NB_USER}:x:${NB_UID}:${NB_GID}:Developer,,,:/home/${NB_USER}:/bin/sh" >> /etc/passwd && \
-    chown ${NB_UID}:${NB_GID} -R /home/${NB_USER} && \
+    mkdir -p /home/$NB_USER_HOME && \
+    echo "${NB_USER}:x:${NB_UID}:${NB_GID}:Developer,,,:/home/${NB_USER_HOME}:/bin/sh" >> /etc/passwd && \
+    chown ${NB_UID}:${NB_GID} -R /home/${NB_USER_HOME} && \
     mkdir -p $CONDA_DIR && \
     chown $NB_USER:$NB_GID $CONDA_DIR && \
     chmod g+w /etc/passwd && \
@@ -106,8 +107,8 @@ RUN echo "auth requisite pam_deny.so" >> /etc/pam.d/su && \
 USER $NB_UID
 
 # Setup work directory for backward-compatibility
-RUN mkdir /home/$NB_USER/work && \
-    fix-permissions /home/$NB_USER
+RUN mkdir /home/$NB_USER_HOME/work && \
+    fix-permissions /home/$NB_USER_HOME
 
 # Install conda as jovyan and check the md5 sum provided on the download site
 ENV MINICONDA_VERSION=4.5.12 \
@@ -126,16 +127,16 @@ RUN cd /tmp && \
     $CONDA_DIR/bin/conda update --all --quiet --yes && \
     conda list python | grep '^python ' | tr -s ' ' | cut -d '.' -f 1,2 | sed 's/$/.*/' >> $CONDA_DIR/conda-meta/pinned && \
     conda clean --all -f -y && \
-    rm -rf /home/$NB_USER/.cache/yarn && \
+    rm -rf /home/$NB_USER_HOME/.cache/yarn && \
     fix-permissions $CONDA_DIR && \
-    fix-permissions /home/$NB_USER
+    fix-permissions /home/$NB_USER_HOME
 
 # Install Tini
 RUN conda install --quiet --yes 'tini=0.18.0' && \
     conda list tini | grep tini | tr -s ' ' | cut -d ' ' -f 1,2 >> $CONDA_DIR/conda-meta/pinned && \
     conda clean --all -f -y && \
     fix-permissions $CONDA_DIR && \
-    fix-permissions /home/$NB_USER
+    fix-permissions /home/$NB_USER_HOME
 
 # Install Jupyter Notebook, Lab, and Hub
 # Generate a notebook server config
@@ -152,9 +153,9 @@ RUN conda install --quiet --yes \
     npm cache clean --force && \
     jupyter notebook --generate-config && \
     rm -rf $CONDA_DIR/share/jupyter/lab/staging && \
-    rm -rf /home/$NB_USER/.cache/yarn && \
+    rm -rf /home/$NB_USER_HOME/.cache/yarn && \
     fix-permissions $CONDA_DIR && \
-    fix-permissions /home/$NB_USER
+    fix-permissions /home/$NB_USER_HOME
 
 USER root
 
@@ -224,8 +225,12 @@ RUN apk update && apk --no-cache add \
     #usermod groupmod
     shadow \
     #DJ specific
-    graphviz ghostscript-fonts git \
-    && rm -rf /var/lib/apt/lists/*
+    graphviz ghostscript-fonts \
+    # DJ extras
+    git mysql-client \
+    && rm -rf /var/lib/apt/lists/* 
+    # && \
+    # usermod -a -G shadow root
 
 # Switch back to jovyan to avoid accidental container runs as root
 USER $NB_UID
@@ -239,7 +244,7 @@ COPY post-start.sh /usr/local/bin/
 
 USER root
 RUN \ 
-    # chown -R $NB_UID:$NB_GID /home/$NB_USER && \
+    # chown -R $NB_UID:$NB_GID /home/$NB_USER_HOME && \
     mkdir /home/shared && \
     chown -R $NB_UID:$NB_GID /home/shared && \
     chmod +x /usr/local/bin/post-start.sh
@@ -253,19 +258,21 @@ LABEL maintainerName="Raphael Guzman" \
       maintainerCompany="DataJoint"
 
 ARG NB_USER="jovyan"
+ARG NB_USER_HOME=".jovyan"
 ARG NB_UID="1000"
 ARG NB_GID="100"
 ENV DEBIAN_FRONTEND noninteractive
 ENV CONDA_DIR=/opt/conda \
     SHELL=/bin/sh \
     NB_USER=$NB_USER \
+    NB_USER_HOME=$NB_USER_HOME \
     NB_UID=$NB_UID \
     NB_GID=$NB_GID \
     LC_ALL=en_US.UTF-8 \
     LANG=en_US.UTF-8 \
     LANGUAGE=en_US.UTF-8
 ENV PATH=$CONDA_DIR/bin:$PATH \
-    HOME=/home/$NB_USER
+    HOME=/home/$NB_USER_HOME
 USER $NB_UID
 ENV MINICONDA_VERSION=4.5.12 \
     CONDA_VERSION=4.6.14

@@ -7,8 +7,10 @@ set -e
 # Exec the specified command or fall back on bash
 if [ $# -eq 0 ]; then
     cmd=( "bash" )
+    # cmd="bash"
 else
     cmd=( "$@" )
+    # cmd="$@"
 fi
 
 run-hooks () {
@@ -44,14 +46,16 @@ if [ $(id -u) == 0 ] ; then
     # Only attempt to change the jovyan username if it exists
     if id jovyan &> /dev/null ; then
         echo "Set username to: $NB_USER"
-        usermod -d /home/$NB_USER -l $NB_USER jovyan
+        ln -s /home/$NB_USER_HOME /home/$NB_USER
+        chown ${NB_UID}:${NB_GID} /home/${NB_USER}
+        usermod -d /home/$NB_USER_HOME -l $NB_USER jovyan # minor issue that symlink does not also show home source with ~
     fi
 
     # Handle case where provisioned storage does not have the correct permissions by default
     # Ex: default NFS/EFS (no auto-uid/gid)
     if [[ "$CHOWN_HOME" == "1" || "$CHOWN_HOME" == 'yes' ]]; then
-        echo "Changing ownership of /home/$NB_USER to $NB_UID:$NB_GID with options '${CHOWN_HOME_OPTS}'"
-        chown $CHOWN_HOME_OPTS $NB_UID:$NB_GID /home/$NB_USER
+        echo "Changing ownership of /home/$NB_USER_HOME to $NB_UID:$NB_GID with options '${CHOWN_HOME_OPTS}'"
+        chown $CHOWN_HOME_OPTS $NB_UID:$NB_GID /home/$NB_USER_HOME
     fi
     if [ ! -z "$CHOWN_EXTRA" ]; then
         for extra_dir in $(echo $CHOWN_EXTRA | tr ',' ' '); do
@@ -64,14 +68,14 @@ if [ $(id -u) == 0 ] ; then
     if [[ "$NB_USER" != "jovyan" ]]; then
         # changing username, make sure homedir exists
         # (it could be mounted, and we shouldn't create it if it already exists)
-        if [[ ! -e "/home/$NB_USER" ]]; then
-            echo "Relocating home dir to /home/$NB_USER"
-            mv /home/jovyan "/home/$NB_USER"
-            chown ${NB_UID}:${NB_GID} /home/${NB_USER}
+        if [[ ! -e "/home/$NB_USER_HOME" ]]; then
+            echo "Relocating home dir to /home/$NB_USER_HOME"
+            mv /home/jovyan "/home/$NB_USER_HOME"
+            chown ${NB_UID}:${NB_GID} /home/${NB_USER_HOME}
         fi
         # if workdir is in /home/jovyan, cd to /home/$NB_USER
         if [[ "$PWD/" == "/home/jovyan/"* ]]; then
-            newcwd="/home/$NB_USER/${PWD:13}"
+            newcwd="/home/$NB_USER_HOME/${PWD:13}"
             echo "Setting CWD to $newcwd"
             cd "$newcwd"
         fi
@@ -106,10 +110,11 @@ if [ $(id -u) == 0 ] ; then
 
     # Post-start script
     # exec sudo -E -H -u $NB_USER /usr/local/bin/post-start.sh
-    echo "Waiting for ${TEMP_WAIT}[s]"
-    sleep $TEMP_WAIT
-    echo "Executing the command: ${cmd[@]}"
-    exec sudo -E -H -u $NB_USER PATH=$PATH XDG_CACHE_HOME=/home/$NB_USER/.cache PYTHONPATH=${PYTHONPATH:-} "${cmd[@]}"
+    # sudo /bin/su -c "export NB_REPO=$NB_REPO;export PATH=$PATH;/usr/local/bin/post-start.sh" - $NB_USER
+    echo "Executing the command: /usr/local/bin/post-start.sh ${cmd[@]}"
+    # echo "Executing the command: cd /home/${NB_USER};${cmd}"
+    exec sudo -E -H -u $NB_USER PATH=$PATH XDG_CACHE_HOME=/home/$NB_USER_HOME/.cache PYTHONPATH=${PYTHONPATH:-} /usr/local/bin/post-start.sh "${cmd[@]}"
+    # sudo /bin/su -c "export PATH=$PATH;export XDG_CACHE_HOME=/home/$NB_USER_HOME/.cache;export PYTHONPATH=${PYTHONPATH:-};cd /home/$NB_USER;${cmd}" - $NB_USER
 else
     if [[ "$NB_UID" == "$(id -u jovyan)" && "$NB_GID" == "$(id -g jovyan)" ]]; then
         # User is not attempting to override user/group via environment
@@ -153,5 +158,7 @@ else
     # Execute the command
     run-hooks /usr/local/bin/before-notebook.d
     echo "Executing the command: ${cmd[@]}"
+    # echo "Executing the command: ${cmd}"
     exec "${cmd[@]}"
+    # exec "${cmd}"
 fi

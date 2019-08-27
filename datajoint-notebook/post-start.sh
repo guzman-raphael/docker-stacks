@@ -17,3 +17,7 @@ git clone $NB_REPO /home/shared
 cp /usr/local/bin/.datajoint_config.json ./
 
 pip install --user /home/shared
+
+cd /home/${NB_USER}
+
+"$@"
