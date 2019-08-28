@@ -44,7 +44,9 @@ ENV DEBIAN_FRONTEND noninteractive
     ca-certificates \
     sudo \
    #  locales \
-    ttf-liberation
+    ttf-liberation \
+    #usermod groupmod
+    shadow
 
 # RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
 #     locale-gen
@@ -91,20 +93,21 @@ RUN apk add linux-pam
 RUN echo "auth requisite pam_deny.so" >> /etc/pam.d/su && \
     sed -i.bak -e 's/^%admin/#%admin/' /etc/sudoers && \
     sed -i.bak -e 's/^%sudo/#%sudo/' /etc/sudoers && \
-   #  addgroup --gid $NB_GID $NB_USER && \
-   #  adduser -h /home/$NB_USER -s /bin/sh -u $NB_UID $NB_USER && \
+    chmod g+w /etc/passwd && \
     mkdir -p /home/$NB_USER_HOME && \
+    # addgroup --gid $NB_GID $NB_USER && \
+    # adduser --disabled-password -h /home/$NB_USER_HOME -s /bin/sh -u $NB_UID $NB_USER && \
+    # echo "$NB_USER:datajoint" | chpasswd && \
     echo "${NB_USER}:x:${NB_UID}:${NB_GID}:Developer,,,:/home/${NB_USER_HOME}:/bin/sh" >> /etc/passwd && \
     chown ${NB_UID}:${NB_GID} -R /home/${NB_USER_HOME} && \
     mkdir -p $CONDA_DIR && \
     chown $NB_USER:$NB_GID $CONDA_DIR && \
-    chmod g+w /etc/passwd && \
     # fix-permissions $HOME && \
     fix-permissions "$(dirname $CONDA_DIR)" && \
     # chmod 4755 /startup && \
     apk add bash
 # RUN ls -la $(dirname $CONDA_DIR)
-USER $NB_UID
+USER $NB_USER
 
 # Setup work directory for backward-compatibility
 RUN mkdir /home/$NB_USER_HOME/work && \
@@ -174,7 +177,7 @@ COPY jupyter_notebook_config.py /etc/jupyter/
 RUN fix-permissions /etc/jupyter/
 
 # Switch back to jovyan to avoid accidental container runs as root
-USER $NB_UID
+USER $NB_USER
 
 USER root
 
@@ -222,8 +225,6 @@ RUN apk update && apk --no-cache add \
 #     tzdata \
 #     unzip \
 #     nano \
-    #usermod groupmod
-    shadow \
     #DJ specific
     graphviz ghostscript-fonts \
     # DJ extras
@@ -233,12 +234,12 @@ RUN apk update && apk --no-cache add \
     # usermod -a -G shadow root
 
 # Switch back to jovyan to avoid accidental container runs as root
-USER $NB_UID
+USER $NB_USER
 #DJ specific
-RUN pip install --no-cache-dir pandas numpy networkx backcall
-RUN pip install --no-cache-dir matplotlib
-RUN pip install --no-cache-dir cryptography
-RUN pip install --no-cache-dir datajoint --pre
+RUN pip install --user pandas numpy networkx backcall
+RUN pip install --user matplotlib
+RUN pip install --user cryptography
+RUN pip install --user datajoint --pre
 COPY ./.datajoint_config.json /usr/local/bin/
 COPY post-start.sh /usr/local/bin/
 
@@ -249,7 +250,7 @@ RUN \
     chown -R $NB_UID:$NB_GID /home/shared && \
     chmod +x /usr/local/bin/post-start.sh
     # git clone https://github.com/ttngu207/Li-2015a.git /home/shared
-USER $NB_UID
+USER $NB_USER
 
 FROM scratch
 COPY --from=base / /
@@ -273,7 +274,7 @@ ENV CONDA_DIR=/opt/conda \
     LANGUAGE=en_US.UTF-8
 ENV PATH=$CONDA_DIR/bin:$PATH \
     HOME=/home/$NB_USER_HOME
-USER $NB_UID
+USER $NB_USER
 ENV MINICONDA_VERSION=4.5.12 \
     CONDA_VERSION=4.6.14
 USER root
@@ -283,5 +284,5 @@ WORKDIR $HOME
 ENTRYPOINT ["tini", "-g", "--"]
 CMD ["start-notebook.sh"]
 # RUN fix-permissions /etc/jupyter/
-USER $NB_UID
+USER $NB_USER
 # USER root
