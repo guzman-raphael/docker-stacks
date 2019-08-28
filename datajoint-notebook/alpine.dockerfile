@@ -101,9 +101,10 @@ RUN echo "auth requisite pam_deny.so" >> /etc/pam.d/su && \
     echo "${NB_USER}:x:${NB_UID}:${NB_GID}:Developer,,,:/home/${NB_USER_HOME}:/bin/sh" >> /etc/passwd && \
     chown ${NB_UID}:${NB_GID} -R /home/${NB_USER_HOME} && \
     mkdir -p $CONDA_DIR && \
-    chown $NB_USER:$NB_GID $CONDA_DIR && \
+    # chown $NB_USER:$NB_GID $CONDA_DIR && \
+    chown 0:$NB_GID $CONDA_DIR && \
     # fix-permissions $HOME && \
-    fix-permissions "$(dirname $CONDA_DIR)" && \
+    # fix-permissions "$(dirname $CONDA_DIR)" && \
     # chmod 4755 /startup && \
     apk add bash
 # RUN ls -la $(dirname $CONDA_DIR)
@@ -113,6 +114,7 @@ USER $NB_USER
 RUN mkdir /home/$NB_USER_HOME/work && \
     fix-permissions /home/$NB_USER_HOME
 
+USER root
 # Install conda as jovyan and check the md5 sum provided on the download site
 ENV MINICONDA_VERSION=4.5.12 \
     CONDA_VERSION=4.6.14
@@ -131,14 +133,15 @@ RUN cd /tmp && \
     conda list python | grep '^python ' | tr -s ' ' | cut -d '.' -f 1,2 | sed 's/$/.*/' >> $CONDA_DIR/conda-meta/pinned && \
     conda clean --all -f -y && \
     rm -rf /home/$NB_USER_HOME/.cache/yarn && \
-    fix-permissions $CONDA_DIR && \
+    # fix-permissions $CONDA_DIR && \
     fix-permissions /home/$NB_USER_HOME
+# USER $NB_USER
 
 # Install Tini
 RUN conda install --quiet --yes 'tini=0.18.0' && \
     conda list tini | grep tini | tr -s ' ' | cut -d ' ' -f 1,2 >> $CONDA_DIR/conda-meta/pinned && \
     conda clean --all -f -y && \
-    fix-permissions $CONDA_DIR && \
+    # fix-permissions $CONDA_DIR && \
     fix-permissions /home/$NB_USER_HOME
 
 # Install Jupyter Notebook, Lab, and Hub
@@ -157,10 +160,10 @@ RUN conda install --quiet --yes \
     jupyter notebook --generate-config && \
     rm -rf $CONDA_DIR/share/jupyter/lab/staging && \
     rm -rf /home/$NB_USER_HOME/.cache/yarn && \
-    fix-permissions $CONDA_DIR && \
+    # fix-permissions $CONDA_DIR && \
     fix-permissions /home/$NB_USER_HOME
 
-USER root
+# USER root
 
 EXPOSE 8888
 WORKDIR $HOME
