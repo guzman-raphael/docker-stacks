@@ -243,7 +243,6 @@ RUN pip install --user pandas numpy networkx backcall
 RUN pip install --user matplotlib
 RUN pip install --user cryptography
 RUN pip install --user datajoint --pre
-COPY ./.datajoint_config.json /usr/local/bin/
 COPY post-start.sh /usr/local/bin/
 
 USER root

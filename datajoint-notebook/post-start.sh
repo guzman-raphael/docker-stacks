@@ -15,6 +15,10 @@
 # remove files and hidden files
 rm -R /home/shared/*
 rm -rf /home/shared/.* 2> /dev/null
+# #dj config (would have been better if this was in user HOME...)
+# if [ ! -f "/usr/local/bin/.datajoint_config.json" ]; then
+#     cp /tmp/.datajoint_config.json /usr/local/bin/.datajoint_config.json
+# fi
 #clone
 git clone $NB_REPO /home/shared
 #copy global config
