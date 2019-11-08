@@ -27,7 +27,7 @@ if [ ! -z "${DJ_PASS}" ]; then
     cp /usr/local/bin/.datajoint_config.json ./
     sed -i "s|\"database.host\": null|\"database.host\": \"${DJ_HOST}\"|g" ./.datajoint_config.json
     sed -i "s|\"database.user\": null|\"database.user\": \"${DJ_USER}\"|g" ./.datajoint_config.json
-    sed -i "s|\"database.host\": null|\"database.host\": \"${DJ_PASS}\"|g" ./.datajoint_config.json
+    sed -i "s|\"database.password\": null|\"database.password\": \"${DJ_PASS}\"|g" ./.datajoint_config.json
 elif [ -z "${DJ_PASS}" ] && [ ! -f "./.datajoint_config.json" ]; then
     #empty var but no initial config
     cp /usr/local/bin/.datajoint_config.json ./
