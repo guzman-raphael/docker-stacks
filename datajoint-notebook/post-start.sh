@@ -15,14 +15,23 @@
 # remove files and hidden files
 rm -R /home/shared/*
 rm -rf /home/shared/.* 2> /dev/null
-# #dj config (would have been better if this was in user HOME...)
+# #dj config (would have been better if this was in user HOME...It is! see below)
 # if [ ! -f "/usr/local/bin/.datajoint_config.json" ]; then
 #     cp /tmp/.datajoint_config.json /usr/local/bin/.datajoint_config.json
 # fi
 #clone
 git clone $NB_REPO /home/shared
 #copy global config
-cp /usr/local/bin/.datajoint_config.json ./
+if [ ! -z "${DJ_PASS}" ]; then
+    #password available
+    cp /usr/local/bin/.datajoint_config.json ./
+    sed -i "s|\"database.host\": null|\"database.host\": \"${DJ_HOST}\"|g" ./.datajoint_config.json
+    sed -i "s|\"database.user\": null|\"database.user\": \"${DJ_USER}\"|g" ./.datajoint_config.json
+    sed -i "s|\"database.host\": null|\"database.host\": \"${DJ_PASS}\"|g" ./.datajoint_config.json
+elif [ -z "${DJ_PASS}" ] && [ ! -f "./.datajoint_config.json" ]; then
+    #empty var but no initial config
+    cp /usr/local/bin/.datajoint_config.json ./
+fi
 #pip install requirements in root + pipeline
 pip install --user -r /home/shared/requirements.txt
 pip install --user /home/shared
