@@ -42,8 +42,12 @@ elif [ -z "${DJ_PASS}" ] && [ ! -f "./.datajoint_config.json" ]; then
 fi
 cp ./.datajoint_config.json ../common/.${NB_ENV}_datajoint_config.json
 #pip install requirements in root + pipeline
-pip install --user -r /home/shared/requirements.txt
-pip install --user /home/shared
+if [ -f "/home/shared/requirements.txt" ]; then
+    pip install --user -r /home/shared/requirements.txt
+fi
+if [ -f "/home/shared/setup.py" ]; then
+    pip install --user /home/shared
+fi
 #copy subset
 mkdir /tmp/shared
 cp -R /home/shared/${NB_REPO_RELPATH}/* /tmp/shared
