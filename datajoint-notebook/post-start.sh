@@ -33,7 +33,14 @@ elif [ -z "${DJ_PASS}" ] && [ ! -f "./.datajoint_config.json" ]; then
     cp /usr/local/bin/.datajoint_config.json ./
     sed -i "s|\"database.host\": null|\"database.host\": \"${DJ_HOST}\"|g" ./.datajoint_config.json
     sed -i "s|\"database.user\": null|\"database.user\": \"${DJ_USER}\"|g" ./.datajoint_config.json
+    for i in ../common/.*datajoint_config.json; do
+        if [ ! "$i" = "../common/.*datajoint_config.json" ] && [ "$(jq -r '.["database.host"]' $i)" = "$DJ_HOST" ] && [ "$(jq -r '.["database.user"]' $i)" = "$DJ_USER" ]; then
+            sed -i "s|\"database.password\": null|\"database.password\": \""$(jq -r '.["database.password"]' $i)"\"|g" ./.datajoint_config.json
+            break
+        fi
+    done
 fi
+cp ./.datajoint_config.json ../common/.${NB_ENV}_datajoint_config.json
 #pip install requirements in root + pipeline
 pip install --user -r /home/shared/requirements.txt
 pip install --user /home/shared

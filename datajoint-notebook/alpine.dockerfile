@@ -1,5 +1,5 @@
 # docker build . -t raphaelguzman/datajoint-jnb:v3.0
-# docker build -f alpine.dockerfile -t raphaelguzman/datajoint-jnb:v0.2.6 .
+# docker build -f alpine.dockerfile -t raphaelguzman/datajoint-jnb:v0.3.3 .
 # curl https://cloud.docker.com/v2/repositories/raphaelguzman/datajoint-jnb/tags/?page_size=25 | jq '[.results[] | { tag: .name, size: .images[0].size }]|.[].size/=1024*1024'
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
