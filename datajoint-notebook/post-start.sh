@@ -41,6 +41,16 @@ elif [ -z "${DJ_PASS}" ] && [ ! -f "./.datajoint_config.json" ]; then
     done
 fi
 cp ./.datajoint_config.json ../common/.${NB_ENV}_datajoint_config.json
+#start monitoring global config
+sh - <<EOF &
+inotifywait -m ./.datajoint_config.json |
+    while read path action file; do
+        if [ "\$(echo \$action | grep MODIFY)" ] || [ "\$(echo \$action | grep CREATE)" ] || [ "\$(echo \$action | grep MOVE)" ]; then
+            echo "DataJoint global config change detected. Backing up..."
+            cp ./.datajoint_config.json ../common/.${NB_ENV}_datajoint_config.json
+        fi
+    done
+EOF
 #pip install requirements in root + pipeline
 if [ -f "/home/shared/requirements.txt" ]; then
     pip install --user -r /home/shared/requirements.txt

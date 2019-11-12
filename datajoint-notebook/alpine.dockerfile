@@ -231,7 +231,7 @@ RUN apk update && apk --no-cache add \
     #DJ specific
     graphviz ghostscript-fonts \
     # DJ extras
-    git mysql-client jq \
+    git mysql-client jq inotify-tools \
     && rm -rf /var/lib/apt/lists/* 
     # && \
     # usermod -a -G shadow root
